@@ -1,0 +1,9 @@
+{
+  "file": [],
+  "compilerOptions": {
+    "types": ["vuetify"],
+    "paths": {
+      "~/*": ["./src/*"]
+    }
+  },
+}
