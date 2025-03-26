@@ -3,34 +3,30 @@
     <v-text-field
       :rules="[rules.markMax]"
       label="Mark"
-      @input="(event) => (newAccount.mark = event.target.value.split(';'))"
-      v-model="mark"
+      v-model="account.mark"
     ></v-text-field>
     <v-select
       label="Account type"
       :items="['LDAP', 'Локальная']"
-      @change="(event) => (newAccount.type = event.target.value)"
-      v-model="type"
+      v-model="account.type"
     ></v-select>
     <v-text-field
       :rules="[rules.required, rules.max]"
       label="Login"
       :validate-on="'eager'"
-      @input="(event) => (newAccount.login = event.target.value)"
-      v-model="login"
+      v-model="account.login"
     ></v-text-field>
     <v-text-field
       :rules="[rules.max, rules.required]"
       :validate-on="'eager'"
       type="password"
       label="Password"
-      @input="(event) => (newAccount.password = event.target.value)"
-      v-model="password"
-      v-if="newAccount?.type !== 'LDAP'"
+      v-model="account.password"
+      v-if="account.type !== 'LDAP'"
     ></v-text-field>
     <button
       class="app-account-list__delete-btn"
-      @click="() => deleteAccount(newAccount.id)"
+      @click="() => accountStore.deleteAccount(account.id)"
     >
       delete
     </button>
@@ -39,83 +35,37 @@
 
 <script setup lang="ts">
 import { VTextField } from "vuetify/lib/components/index.mjs";
-import { computed, type PropType } from "vue";
+import { ref, type PropType } from "vue";
 import { useAccountStore } from "../store/accounts";
-
-interface Account {
-  id: number;
-  mark?: string[] | null;
-  type?: string;
-  login?: string | null;
-  password?: string | null;
-}
+import { Account } from "~/types";
 
 const accountStore = useAccountStore();
 
 const props = defineProps({
-  newAccount: { type: Object as PropType<Account> },
-  deleteAccount: { type: Function },
+  account: { type: Object as PropType<Account>, required: true },
+  handleCreate: { type: Function },
   isEditing: { type: Boolean },
 });
 
-const mark = computed({
-  get: () => props.newAccount?.mark?.join(";") || "",
-  set: (val) => {
-    if (props.newAccount.mark) {
-      props.newAccount.mark = val.split(";");
-    }
-  },
-});
-
-const type = computed({
-  get: () => props.newAccount?.type || "Локальная",
-  set: (val) => {
-    if (props.newAccount) {
-      props.newAccount.type = val;
-    }
-  },
-});
-
-const login = computed({
-  get: () => props.newAccount?.login || "",
-  set: (val) => {
-    console.log(props);
-    if (props.newAccount) {
-      props.newAccount.login = val;
-    }
-  },
-});
-
-const password = computed({
-  get: () => props.newAccount?.password || "",
-  set: (val) => {
-    if (props.newAccount) {
-      props.newAccount.password = val;
-    }
-  },
-});
+const account = ref({ ...props.account });
 
 const submitForm = (event: KeyboardEvent) => {
   if (event.key === "Enter") {
-    if (!props.newAccount.password && props.newAccount.type === "LDAP") {
-      props.newAccount.password = null;
-      accountStore.addAccount(props.newAccount);
-    } else if (props.newAccount.password) {
-      accountStore.addAccount(props.newAccount);
-    } else throw new Error("Password is required");
-  }
+    event.preventDefault();
 
+    if (!isPasswordValid()) return alert("Password is empty");
+    accountStore.addAccount(account.value);
+    props.handleCreate();
+  }
   return null;
 };
 
 const editForm = (event: KeyboardEvent) => {
   if (event.key === "Enter") {
-    if (!props.newAccount.password && props.newAccount.type === "LDAP") {
-      props.newAccount.password = null;
-      accountStore.editAccount(props.newAccount);
-    } else if (props.newAccount.password) {
-      accountStore.editAccount(props.newAccount);
-    } else throw new Error("Password is required");
+    event.preventDefault();
+
+    if (!isPasswordValid()) return alert("Password is empty");
+    accountStore.editAccount(account.value);
   }
 };
 
@@ -127,6 +77,13 @@ const rules = {
   max: (value: string) => value.length <= 100 || "Max length 100char",
   markMax: (value: any) => value.length <= 50 || "Max length 50char",
 };
+
+function isPasswordValid(): boolean {
+  if (account.value.type !== "LDAP" && !account.value.password) {
+    return false;
+  }
+  return true;
+}
 </script>
 
 <style scoped lang="sass">

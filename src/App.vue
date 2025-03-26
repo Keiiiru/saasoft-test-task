@@ -1,18 +1,17 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from "vue";
-import { Account, useAccountStore } from "./store/accounts";
+import { useAccountStore } from "./store/accounts";
 import AccountForm from "./components/AccountForm.vue";
+import { Account } from "./types";
+import { getDefaultAccount } from "./constants";
 
 const accountStore = useAccountStore();
 const accountsList = computed<Account[]>(() => accountStore.getAccountList);
 const isCreating = ref(false);
-let newAccount = reactive<Account>({
-  id: Math.round(Math.random() * 1000),
-  mark: [],
-  type: "",
-  login: "",
-  password: "",
-});
+
+function handleCreate() {
+  isCreating.value = false;
+}
 </script>
 
 <template>
@@ -37,17 +36,14 @@ let newAccount = reactive<Account>({
         v-for="(account, index) in accountsList"
         :key="index"
       >
-        <AccountForm
-          :new-account="account"
-          :delete-account="accountStore.deleteAccount"
-          :isEditing="true"
-        ></AccountForm>
+        <AccountForm :account="account" :isEditing="true"></AccountForm>
       </li>
     </ul>
   </template>
 
   <AccountForm
-    :new-account="newAccount"
+    :account="getDefaultAccount()"
+    :handleCreate="handleCreate"
     :isEditing="false"
     v-if="isCreating"
   ></AccountForm>
